@@ -1,0 +1,342 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(readr)
+```
+
+#Importing data set
+
+```{r}
+install.packages("readxl")
+library(readxl)
+
+```
+
+```{r}
+air_df <- read_excel("C:/R_coursework/who_ambient_air_quality_database_version_2024_(v6.1) (1).xlsx",sheet = "Update 2024 (V6.1)")
+
+#Database is provided as a multi-sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
+```
+
+# Rewiving data set
+```{r}
+head(air_df)
+
+
+```
+
+# create new data farame with sutable clomns
+```{r}
+air_df1 <- air_df %>%
+  select(who_region,iso3,country_name,city,year,pm10_concentration,pm25_concentration,no2_concentration,latitude,longitude,population)
+ 
+air_df1 
+```
+
+#finding most appopriate air
+
+```{r}
+air_df1[air_df1 == "NA"] <- NA    # when put colMeans(is.na(air_df)) * 100 shows 0 na values for all colomns
+sum(is.na(air_df1)) 
+```
+```{r}
+missing_summary <- data.frame(
+  Column = colnames(air_df1),
+  Missing_Count = colSums(is.na(air_df1)),
+  Missing_Percent = round(colMeans(is.na(air_df1)) * 100, 2)
+)
+
+
+print(missing_summary)
+```
+
+#filtering sutable air
+```{r}
+air_df2 <- air_df1 %>%
+  select(who_region,iso3,country_name,city,year,pm10_concentration)
+
+air_df2
+```
+
+
+#taking mean value 
+```{r}
+air_df3 <- air_df2 %>%
+  mutate(pm10_concentration = as.numeric(pm10_concentration))%>%
+           
+  filter(!is.na(pm10_concentration)) %>%    
+  group_by( iso3, who_region,country_name, year) %>%
+  
+  summarise(mean_pm10 = mean(pm10_concentration, na.rm = TRUE))
+
+air_df3 
+
+```
+
+#choosing appopriate year
+
+```{r}
+air_df_wide <- air_df3 %>%
+  pivot_wider(
+    names_from = year,           # column names will be years (2010–2022)
+    values_from = mean_pm10      # the data values will be the mean PM10
+  )%>%
+  arrange(who_region, country_name)
+
+air_df_wide
+```
+
+
+```{r}
+
+year_sum_table <- data.frame(
+  Years = 2010:2022,
+  Missing_count = sapply(air_df_wide[, as.character(2010:2022)], function(x) sum(is.na(x))),
+  Missing_percentage = sapply(air_df_wide[, as.character(2010:2022)], function(x) mean(is.na(x)) * 100)
+)
+
+year_sum_table
+
+```
+creating model for predict values of 2019
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(Metrics)
+
+```
+
+
+```{r}
+air_df_model <- air_df_wide %>%
+  ungroup() %>%
+  filter(rowSums(!is.na(select(., as.character(2010:2018)))) > 5) %>%
+  select(iso3, who_region, country_name, `2010`:`2019`)
+
+air_df_model
+```
+
+```{r}
+model_2019 <- lm(`2019`~ ., data = air_df_model %>% select(`2019`, `2010`:`2018`))
+
+summary(model_2019)
+
+```
+
+
+
+Rewiving population data set
+```{r}
+head(population_df)
+```
+
+
+```{r}
+sum(is.na(population_df$"2019"))
+```
+Join population data set  with air polution dta set
+```{r}
+
+population_df_1 <- population_df %>%
+  select(
+    iso3 = `Country Code`,
+    Population_2018 = `2018`,
+    Population_2019 = `2019`) %>%
+  mutate(
+    Population_2018 = as.numeric(Population_2018),
+    Population_2019 = as.numeric(Population_2019),
+    Mean_population_18_19 = rowMeans(across(c(Population_2018, Population_2019)), na.rm = TRUE)
+  )
+
+population_df_1
+
+```
+
+```{r}
+
+# 3️⃣ Merge (join) with your cleaned PM10 dataset
+# df_18_19_clean comes from your earlier code
+df_joined <- df_18_19_clean %>%
+  left_join(population_df_1, by = "iso3")
+
+df_joined
+```
+CHECKING IS MERGE CORECTLY
+```{r}
+
+df_joined_sum <-df_joined %>%
+  summarise(
+    total_countries = n(),
+    with_population = sum(!is.na(Mean_population_18_19 )),
+    without_population = sum(is.na(Mean_population_18_19 ))
+  )
+
+df_joined_sum 
+```
+
+```{r}
+
+df_18_19_clean %>% anti_join(population_df_1, by = "iso3")
+
+```
+Final data set after cleaning and prprocessing
+
+```{r}
+df <-df_joined
+
+df
+```
+
+Data visulizing
+
+```{r}
+library(ggplot2)
+
+# Scatter plot: PM10 vs Population
+ggplot(df, aes(x = log10(Mean_population_18_19), y = mean_pm10, color =who_region)) +
+  geom_point(size = 3, alpha = 0.7) +  # points
+  scale_x_log10(labels = scales::comma) +  # log scale for better spacing
+  labs(
+    title = "Relationship between Population and PM10 (2018–2019)",
+    x = "Population (log scale, 2018–2019 average)",
+    y = "Mean PM10 concentration (µg/m³)",
+    color = "WHO Region"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    legend.position = "bottom"
+  )
+
+```
+
+```{r}
+ggplot(df, aes(x =log10( Mean_population_18_19), y = mean_pm10, color = who_region)) +
+  geom_point(size = 3, alpha = 0.7) +
+  scale_x_log10(labels = scales::comma) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed") +
+  labs(
+    title = "PM10 vs Population (2018–2019)",
+    x = "Population (log scale)",
+    y = "Mean PM10 (µg/m³)",
+    color = "WHO Region"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(df_18_19_clean, aes(x = reorder(country_name, mean_pm10), y = mean_pm10, fill = who_region)) +
+  geom_col() +
+  coord_flip() +  # flips chart for better readability
+  labs(
+    title = "Average PM10 Concentration by Country (2018–2019)",
+    x = "Country",
+    y = "Mean PM10 (µg/m³)",
+    fill = "WHO Region"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.text.y = element_text(size = 8)
+  )
+    
+
+```
+
+```{r}
+ggplot(df, aes(x = who_region, y = mean_pm10, fill = who_region)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
+  labs(
+    title = "Distribution of PM10 by WHO Region (2018–2019)",
+    x = "WHO Region",
+    y = "Mean PM10 (µg/m³)"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, face = "bold"))
+
+```
+
+```{r}
+ggplot(df, aes(x = reorder(country_name, mean_pm10), y = mean_pm10)) +
+  geom_boxplot(fill = "lightblue") +
+  coord_flip() +
+  labs(
+    title = "PM10 Distribution by Country (2018-2019)",
+    x = "Country",
+    y = "Mean PM10 (µg/m³)"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# 1️⃣ Get the top 10 countries by PM10
+top10_pm10 <- df %>%
+  arrange(desc(mean_pm10)) %>%
+  slice_head(n = 10)
+
+# 2️⃣ Plot
+ggplot(top10_pm10,
+       aes(x = reorder(country_name, mean_pm10),
+           y = mean_pm10,
+           fill = who_region)) +
+  geom_col() +
+  geom_text(aes(label = round(mean_pm10, 1)),     # label PM10 value
+            hjust = -0.2, size = 3.5) +          # position labels slightly outside bars
+  coord_flip() +
+  labs(
+    title = "Top 10 Most Polluted Countries (2018–2019 Average PM₁₀)",
+    subtitle = "Based on WHO Ambient Air Quality Database 2024 v6.1",
+    x = "Country",
+    y = "Mean PM₁₀ (µg/m³)",
+    fill = "WHO Region"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 10),
+    axis.text.y = element_text(size = 9),
+    legend.position = "bottom"
+  ) +
+  scale_fill_brewer(palette = "Set2") +
+  expand_limits(y = max(top10_pm10$mean_pm10) * 1.15)
+
+```
+
+```{r}
+top10_pm10 <- df_18_19_clean %>%
+  arrange(desc(mean_pm10)) %>%
+  slice_head(n = 10)
+
+ggplot(top10_pm10,
+       aes(x = reorder(country_name, mean_pm10),
+           y = mean_pm10,
+           fill = who_region)) +
+  geom_col() +
+  geom_text(aes(label = round(mean_pm10, 1)), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(
+    title = "Top 10 Most Polluted Countries (2018–2019)",
+    x = "Country",
+    y = "Mean PM10 (µg/m³)",
+    fill = "WHO Region"
+  ) +
+  theme_minimal()
+
+```
+
