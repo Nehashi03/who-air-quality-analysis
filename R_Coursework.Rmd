@@ -3,6 +3,7 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+<<<<<<< HEAD
 ```{r}
 library(tidyverse)
 library(ggplot2)
@@ -11,6 +12,19 @@ library(readr)
 ```
 
 #Importing data set
+=======
+1.Installing and Loading Required Packages
+
+```{r}
+install.packages("readxl")
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot)
+```
+
+2.Importing the WHO Air Quality Dataset
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 
 ```{r}
 install.packages("readxl")
@@ -21,16 +35,27 @@ library(readxl)
 ```{r}
 air_df <- read_excel("C:/R_coursework/who_ambient_air_quality_database_version_2024_(v6.1) (1).xlsx",sheet = "Update 2024 (V6.1)")
 
+<<<<<<< HEAD
 #Database is provided as a multi-sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
 ```
 
 # Rewiving data set
+=======
+#Database is provided as a multi sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
+```
+
+3.Reviewing the data set
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 ```{r}
 head(air_df)
 
 ```
 
+<<<<<<< HEAD
 # create new data farame with sutable clomns
+=======
+4.Create new data frame with suitable columns
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 ```{r}
 air_df1 <- air_df %>%
   select(who_region,iso3,country_name,city,year,pm10_concentration,pm25_concentration,no2_concentration,latitude,longitude,population)
@@ -38,11 +63,18 @@ air_df1 <- air_df %>%
 air_df1 
 ```
 
+<<<<<<< HEAD
 #finding most appopriate air
 
 ```{r}
 air_df1[air_df1 == "NA"] <- NA    # when put colMeans(is.na(air_df)) * 100 shows 0 na values for all colomns
 sum(is.na(air_df1)) 
+=======
+5.Finding most suitable air
+
+```{r}
+air_df1[air_df1 == "NA"] <- NA    
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 ```
 ```{r}
 missing_summary <- data.frame(
@@ -55,7 +87,11 @@ missing_summary <- data.frame(
 print(missing_summary)
 ```
 
+<<<<<<< HEAD
 #filtering sutable air
+=======
+6.Selecting Key Air Quality Indicators (PM10)
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 ```{r}
 air_df2 <- air_df1 %>%
   select(who_region,iso3,country_name,city,year,pm10_concentration)
@@ -64,7 +100,11 @@ air_df2
 ```
 
 
+<<<<<<< HEAD
 #taking mean value 
+=======
+7.Calculating Annual Mean PM10 per Country
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 ```{r}
 air_df3 <- air_df2 %>%
   mutate(pm10_concentration = as.numeric(pm10_concentration))%>%
@@ -78,6 +118,7 @@ air_df3
 
 ```
 
+<<<<<<< HEAD
 #choosing appopriate year
 
 ```{r}
@@ -85,6 +126,18 @@ air_df_wide <- air_df3 %>%
   pivot_wider(
     names_from = year,           # column names will be years (2010–2022)
     values_from = mean_pm10      # the data values will be the mean PM10
+=======
+
+8.choosing suitable year
+
+```{r}
+
+air_df_wide <- air_df3 %>%
+  pivot_wider(
+    names_from = year,           
+    values_from = mean_pm10,
+    names_glue = "pm10_values_in_{year}"
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
   )%>%
   arrange(who_region, country_name)
 
@@ -92,6 +145,214 @@ air_df_wide
 ```
 
 
+<<<<<<< HEAD
 
  
  
+=======
+```{r}
+year_cols <- paste0("pm10_values_in_", 2010:2022)
+
+
+year_sum_table <- data.frame(
+  Years = 2010:2022,
+  Missing_count = sapply(air_df_wide[, year_cols], function(x) sum(is.na(x))),
+  Missing_percentage = sapply(air_df_wide[, year_cols], function(x) mean(is.na(x)) * 100)
+)
+
+year_sum_table
+```
+
+9.Choosing best who region
+
+```{r}
+# Count how many unique countries in each WHO region
+
+region_country_count <- air_df3 %>%
+  
+   group_by(who_region) %>%
+   summarise(
+     n_countries =n_distinct(country_name))%>%
+     arrange(desc(n_countries))
+
+region_country_count
+
+```
+
+```{r}
+library(tidyr)
+
+# Convert European data (2013–2019) into wide format
+europe_wide <- europe_df %>%
+  select(country_name, iso3, who_region, year, mean_pm10) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = mean_pm10,
+    names_glue = "pm10_values_in_{year}"
+  ) %>%
+  arrange(country_name)
+
+# View the wide table
+europe_wide
+
+```
+10.Handeling missing values
+
+```{r}
+# Remove all rows with NA values
+europe_wide_clean <- na.omit(europe_wide)
+
+europe_wide_clean
+```
+
+11.Performing EDA 
+
+```{r}
+df <-europe_wide_clean
+
+# Basic structure
+str(df)
+
+
+```
+
+```{r}
+summary(europe_wide_clean)
+```
+
+12. visulization
+
+12.1 Visulize basesd on whole europe region 
+
+12.1.1 Finding how average values of PM10 in Europe region 
+```{r}
+europe_long <- europe_wide_clean %>%
+  pivot_longer(
+    cols = starts_with("pm10_values_in_"),
+    names_to = "year",
+    values_to = "pm10"
+  ) %>%
+  mutate(year = as.numeric(gsub("pm10_values_in_", "", year)))
+
+
+head(europe_long)
+```
+
+```{r}
+country_avg <- europe_long %>%
+  group_by(country_name) %>%
+  summarise(avg_pm10 = mean(pm10, na.rm = TRUE)) %>%
+  arrange(desc(avg_pm10))
+
+# Bar chart
+ggplot(country_avg, aes(x = reorder(country_name, avg_pm10), y = avg_pm10)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Average PM10 by Country in Europe (2013–2019)",
+    x = "Country",
+    y = "Average PM10 (µg/m³)"
+  ) +
+  theme_minimal()
+
+
+```
+12.1.2 Average PM10 per Year (Regional Trend)
+```{r}
+avg_year <- europe_long %>%
+  group_by(year) %>%
+  summarise(mean_pm10 = mean(pm10, na.rm = TRUE))
+
+# Line chart of yearly averages
+ggplot(avg_year, aes(x = year, y = mean_pm10)) +
+  geom_line(color = "steelblue", linewidth = 1.3) +
+  geom_point(color = "darkred", size = 3) +
+  labs(
+    title = "Average PM10 Trend in Europe (2013–2019)",
+    subtitle = "Regional mean PM10 values across all European countries",
+    x = "Year",
+    y = "Average PM10 (µg/m³)"
+  ) +
+  theme_minimal()
+
+```
+Distribution of All PM10 Values in Europe (2013–2019)
+```{r}
+ggplot(europe_long, aes(x = pm10)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.8) +
+  labs(
+    title = "Distribution of PM10 Concentrations in Europe (2013–2019)",
+    x = "PM10 (µg/m³)",
+    y = "Number of Records"
+  ) +
+  theme_minimal()
+
+```
+12.2.1 PM₁₀ Trends for Each European Country
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Line plot per country
+ggplot(europe_long, aes(x = year, y = pm10, group = country_name, color = country_name)) +
+  geom_line(alpha = 0.7) +
+  geom_point(size = 1.8) +
+  labs(
+    title = "PM10 Trends by Country in WHO European Region (2013–2019)",
+    subtitle = "Each line represents one country's PM10 trend over time",
+    x = "Year",
+    y = "PM10 (µg/m³)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+12.2.2 Boxplot Comparison of Countries
+
+```{r}
+ggplot(europe_long, aes(x = reorder(country_name, pm10, FUN = median), y = pm10)) +
+  geom_boxplot(fill = "lightblue", color = "darkblue") +
+  coord_flip() +
+  labs(
+    title = "PM10 Variation by Country (Europe 2013–2019)",
+    subtitle = "Each box shows median and spread of PM10 values per country",
+    x = "Country",
+    y = "PM10 (µg/m³)"
+  ) +
+  theme_minimal()
+
+```
+```{r}
+top10 <- country_avg %>% 
+  top_n(10, avg_pm10)
+
+ggplot(top10, aes(x = reorder(country_name, avg_pm10), y = avg_pm10)) +
+  geom_col(fill = "firebrick") +
+  coord_flip() +
+  labs(
+    title = "Top 10 European Countries with Highest PM10 (2013–2019)",
+    x = "Country",
+    y = "Average PM10 (µg/m³)"
+  ) +
+  theme_minimal()
+
+```
+12.2.4 Heatmap of PM₁₀ by Country and Year (optional but beautiful)
+```{r}
+ggplot(europe_long, aes(x = factor(year), y = reorder(country_name, -pm10), fill = pm10)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(option = "C") +
+  labs(
+    title = "PM10 Levels by Country and Year (Europe 2013–2019)",
+    x = "Year",
+    y = "Country",
+    fill = "PM10 (µg/m³)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 6))
+
+```
+
+>>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
