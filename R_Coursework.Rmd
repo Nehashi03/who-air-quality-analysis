@@ -3,7 +3,6 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-<<<<<<< HEAD
 ```{r}
 library(tidyverse)
 library(ggplot2)
@@ -12,7 +11,7 @@ library(readr)
 ```
 
 #Importing data set
-=======
+
 1.Installing and Loading Required Packages
 
 ```{r}
@@ -24,7 +23,7 @@ library(ggplot)
 ```
 
 2.Importing the WHO Air Quality Dataset
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
+
 
 ```{r}
 install.packages("readxl")
@@ -33,29 +32,26 @@ library(readxl)
 ```
 
 ```{r}
+
 air_df <- read_excel("C:/R_coursework/who_ambient_air_quality_database_version_2024_(v6.1) (1).xlsx",sheet = "Update 2024 (V6.1)")
 
-<<<<<<< HEAD
 #Database is provided as a multi-sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
 ```
 
 # Rewiving data set
-=======
+
 #Database is provided as a multi sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
 ```
 
 3.Reviewing the data set
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
+
 ```{r}
 head(air_df)
 
 ```
 
-<<<<<<< HEAD
-# create new data farame with sutable clomns
-=======
 4.Create new data frame with suitable columns
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
+
 ```{r}
 air_df1 <- air_df %>%
   select(who_region,iso3,country_name,city,year,pm10_concentration,pm25_concentration,no2_concentration,latitude,longitude,population)
@@ -63,18 +59,16 @@ air_df1 <- air_df %>%
 air_df1 
 ```
 
-<<<<<<< HEAD
 #finding most appopriate air
 
 ```{r}
 air_df1[air_df1 == "NA"] <- NA    # when put colMeans(is.na(air_df)) * 100 shows 0 na values for all colomns
 sum(is.na(air_df1)) 
-=======
+
 5.Finding most suitable air
 
 ```{r}
 air_df1[air_df1 == "NA"] <- NA    
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
 ```
 ```{r}
 missing_summary <- data.frame(
@@ -86,12 +80,8 @@ missing_summary <- data.frame(
 
 print(missing_summary)
 ```
-
-<<<<<<< HEAD
-#filtering sutable air
-=======
 6.Selecting Key Air Quality Indicators (PM10)
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
+
 ```{r}
 air_df2 <- air_df1 %>%
   select(who_region,iso3,country_name,city,year,pm10_concentration)
@@ -99,13 +89,8 @@ air_df2 <- air_df1 %>%
 air_df2
 ```
 
-
-<<<<<<< HEAD
-#taking mean value 
-=======
 7.Calculating Annual Mean PM10 per Country
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
-```{r}
+
 air_df3 <- air_df2 %>%
   mutate(pm10_concentration = as.numeric(pm10_concentration))%>%
            
@@ -117,16 +102,12 @@ air_df3 <- air_df2 %>%
 air_df3 
 
 ```
-
-<<<<<<< HEAD
-#choosing appopriate year
-
 ```{r}
 air_df_wide <- air_df3 %>%
   pivot_wider(
     names_from = year,           # column names will be years (2010–2022)
     values_from = mean_pm10      # the data values will be the mean PM10
-=======
+```
 
 8.choosing suitable year
 
@@ -137,19 +118,13 @@ air_df_wide <- air_df3 %>%
     names_from = year,           
     values_from = mean_pm10,
     names_glue = "pm10_values_in_{year}"
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
+
   )%>%
   arrange(who_region, country_name)
 
 air_df_wide
 ```
 
-
-<<<<<<< HEAD
-
- 
- 
-=======
 ```{r}
 year_cols <- paste0("pm10_values_in_", 2010:2022)
 
