@@ -325,4 +325,3 @@ ggplot(europe_long, aes(x = factor(year), y = reorder(country_name, -pm10), fill
 
 ```
 
->>>>>>> df095acbf9216d5974bdc3485fc2e8930e0de726
