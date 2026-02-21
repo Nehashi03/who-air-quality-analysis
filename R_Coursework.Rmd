@@ -38,11 +38,6 @@ air_df <- read_excel("C:/R_coursework/who_ambient_air_quality_database_version_2
 #Database is provided as a multi-sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
 ```
 
-# Rewiving data set
-
-#Database is provided as a multi sheet Excel workbook. The main air pollution measurements are located in the"Update 2024 (V6.1)" sheet, while the other sheets provide metadata about countries and indicators.
-```
-
 3.Reviewing the data set
 
 ```{r}
